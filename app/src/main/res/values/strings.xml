@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PFC Clone</string>
+    <string name="acc_desc">Нужен для имитации нажатий на экран</string>
+</resources>
