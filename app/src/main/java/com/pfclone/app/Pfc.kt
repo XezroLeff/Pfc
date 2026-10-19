@@ -31,7 +31,7 @@ class Pfc(private val svc: ScriptService) {
     }
 
     fun startScreenCapture(mode: Int) { check(); svc.capture?.start() }
-    fun stopScreenCapture() { svc.capture?.stop() }
+    fun stopScreenCapture() {}
 
     fun getColor(x: Int, y: Int): Int { check(); return svc.capture?.pixel(x, y) ?: 0 }
 

@@ -1,7 +1,6 @@
 package com.pfclone.app
 
 import android.Manifest
-import androidx.activity.ComponentActivity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
@@ -9,6 +8,8 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.text.InputType
 import android.view.Gravity
@@ -18,6 +19,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 
 class MainActivity : ComponentActivity() {
@@ -25,6 +27,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var editor: EditText
     private lateinit var logView: TextView
     private lateinit var logScroll: ScrollView
+    private lateinit var panelBtn: Button
     private val prefs by lazy { getSharedPreferences("pfc", Context.MODE_PRIVATE) }
 
     private val defaultScript = """pfc.log("» Спам-кликер + цвет + 6 нажатий «");
@@ -69,9 +72,9 @@ while (!EXIT) {
                 val i = Intent(this, ScriptService::class.java)
                     .putExtra(ScriptService.EXTRA_CODE, res.resultCode)
                     .putExtra(ScriptService.EXTRA_DATA, res.data)
-                    .putExtra(ScriptService.EXTRA_SCRIPT, editor.text.toString())
                 startForegroundService(i)
-                moveTaskToBack(true)   // свернуть, чтобы скрипт видел нужный экран
+                Handler(Looper.getMainLooper()).postDelayed({ refreshPanelBtn() }, 500)
+                moveTaskToBack(true)
             } else toast("Доступ к записи экрана не выдан")
         }
 
@@ -102,7 +105,8 @@ while (!EXIT) {
 
         val row2 = LinearLayout(this)
         row2.addView(btn("Сохранить") { save(); toast("Сохранено") })
-        row2.addView(btn("▶ СТАРТ") { start() })
+        panelBtn = btn("") { togglePanel() }
+        row2.addView(panelBtn)
         root.addView(row2, LinearLayout.LayoutParams(-1, -2))
 
         logView = TextView(this).apply { textSize = 12f }
@@ -110,10 +114,12 @@ while (!EXIT) {
         root.addView(logScroll, LinearLayout.LayoutParams(-1, 260))
 
         setContentView(root)
+        refreshPanelBtn()
     }
 
     override fun onResume() {
         super.onResume()
+        refreshPanelBtn()
         logView.text = LogBus.buffer.toString()
         LogBus.listener = { s ->
             logView.append(s + "\n")
@@ -129,15 +135,24 @@ while (!EXIT) {
         layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
     }
 
+    private fun refreshPanelBtn() {
+        panelBtn.text = if (ScriptService.running) "■ ВЫКЛ. ПАНЕЛЬ" else "▶ ВКЛ. ПАНЕЛЬ"
+    }
+
     private fun save() { prefs.edit().putString("script", editor.text.toString()).apply() }
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 
-    private fun start() {
-        if (ScriptService.running) { toast("Уже запущено"); return }
-        if (ClickService.instance == null) { toast("Включи службу «PFC Clone» в спец. возможностях"); return }
-        if (!Settings.canDrawOverlays(this)) toast("Без разрешения «Поверх окон» не будет кнопки СТОП (есть стоп в шторке)")
+    private fun togglePanel() {
+        if (ScriptService.running) {
+            startService(Intent(this, ScriptService::class.java).setAction(ScriptService.ACTION_STOP))
+            Handler(Looper.getMainLooper()).postDelayed({ refreshPanelBtn() }, 500)
+            return
+        }
+        if (ClickService.instance == null) { toast("Включи службу «PFC Clone» в спец. возможностях (кнопка 1)"); return }
+        if (!Settings.canDrawOverlays(this)) { toast("Разреши «Поверх окон» (кнопка 2)"); return }
         save()
-        logView.text = ""; LogBus.clear()
+        LogBus.clear()
+        logView.text = ""
         val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         projectionLauncher.launch(mpm.createScreenCaptureIntent())
     }
