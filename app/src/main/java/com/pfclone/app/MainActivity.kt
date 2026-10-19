@@ -114,6 +114,7 @@ while (!EXIT) {
 
     override fun onResume() {
         super.onResume()
+        logView.text = LogBus.buffer.toString()
         LogBus.listener = { s ->
             logView.append(s + "\n")
             logScroll.post { logScroll.fullScroll(ScrollView.FOCUS_DOWN) }
@@ -136,7 +137,7 @@ while (!EXIT) {
         if (ClickService.instance == null) { toast("Включи службу «PFC Clone» в спец. возможностях"); return }
         if (!Settings.canDrawOverlays(this)) toast("Без разрешения «Поверх окон» не будет кнопки СТОП (есть стоп в шторке)")
         save()
-        logView.text = ""
+        logView.text = ""; LogBus.clear()
         val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         projectionLauncher.launch(mpm.createScreenCaptureIntent())
     }
