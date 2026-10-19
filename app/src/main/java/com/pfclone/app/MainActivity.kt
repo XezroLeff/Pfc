@@ -1,7 +1,7 @@
 package com.pfclone.app
 
 import android.Manifest
-import android.app.Activity
+import androidx.activity.ComponentActivity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
@@ -20,7 +20,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
 
     private lateinit var editor: EditText
     private lateinit var logView: TextView
